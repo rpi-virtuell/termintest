@@ -39,6 +39,8 @@ Standard-Relays (`js/config.js`):
 - `wss://amb-relay.edufeed.org`
 - `wss://relay.edufeed.org`
 
+Ergebnis der Relay-Prüfung (Erreichbarkeit, NIPs, Datenqualität): [docs/relays.md](docs/relays.md)
+
 ## Aufbau
 
 ```
