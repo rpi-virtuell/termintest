@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Edufeed Termine</title>
+  <meta name="description" content="Termine und Veranstaltungen aus dem Bildungsbereich – dezentral über Nostr (NIP-52) von den Edufeed-Relays.">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="css/app.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Zum Inhalt springen</a>
+
+  <header class="topbar">
+    <button class="icon-btn only-mobile" id="btn-sidebar" aria-label="Filter anzeigen" aria-expanded="false" aria-controls="sidebar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+    </button>
+    <a class="brand" href="#" aria-label="Edufeed Termine – Startseite">
+      <img src="icon.svg" alt="" width="28" height="28">
+      <span>Edufeed <b>Termine</b></span>
+    </a>
+    <div class="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="search" type="search" placeholder="Termine durchsuchen …" autocomplete="off" aria-label="Termine durchsuchen" enterkeyhint="search">
+      <kbd class="hide-mobile">/</kbd>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-primary hidden" id="btn-create">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="hide-mobile">Termin</span>
+      </button>
+      <button class="btn" id="btn-login">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span class="hide-mobile">Anmelden</span>
+      </button>
+      <button class="icon-btn" id="btn-settings" aria-label="Relays &amp; Einstellungen" title="Relays &amp; Einstellungen">
+        <span class="relay-dot" id="relay-dot"></span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12a7 7 0 0 1 14 0M8.5 12a3.5 3.5 0 0 1 7 0"/><circle cx="12" cy="12" r="1"/><path d="M12 13v7"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Filter">
+      <section class="mini-cal" id="mini-cal" aria-label="Monatsübersicht"></section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Filter</h2>
+          <button class="link-btn hidden" id="btn-reset-filters">zurücksetzen</button>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-past">
+          <span>Vergangene Termine zeigen</span>
+        </label>
+      </section>
+
+      <section class="panel" id="panel-calendars" hidden>
+        <h2>Kalender</h2>
+        <div class="stack" id="calendar-list"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Schlagworte</h2>
+        <div class="chips" id="tag-list"><span class="muted">wird geladen …</span></div>
+      </section>
+
+      <section class="panel">
+        <h2>Veranstalter</h2>
+        <div class="stack" id="author-list"><span class="muted">wird geladen …</span></div>
+      </section>
+
+      <footer class="sidebar-foot">
+        <p>Alle Daten kommen direkt und signiert von <a href="https://nostr.com" target="_blank" rel="noopener">Nostr</a>-Relays (NIP-52). Kein Server, kein Tracking.</p>
+        <p><a href="https://github.com/rpi-virtuell/termintest" target="_blank" rel="noopener">Quellcode</a></p>
+      </footer>
+    </aside>
+    <div class="scrim" id="scrim" hidden></div>
+
+    <main id="main" class="main" tabindex="-1">
+      <div class="toolbar">
+        <div class="nav-group">
+          <button class="btn" id="btn-today">Heute</button>
+          <button class="icon-btn" id="btn-prev" aria-label="Zurück"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
+          <button class="icon-btn" id="btn-next" aria-label="Weiter"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+          <h1 id="range-label" aria-live="polite"></h1>
+        </div>
+        <div class="nav-group">
+          <div class="segmented" role="tablist" aria-label="Ansicht">
+            <button role="tab" data-view="month" id="tab-month">Monat</button>
+            <button role="tab" data-view="week" id="tab-week">Woche</button>
+            <button role="tab" data-view="list" id="tab-list">Liste</button>
+          </div>
+          <button class="icon-btn" id="btn-export" aria-label="Auswahl als iCal exportieren" title="Auswahl als iCal (.ics) exportieren">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="active-filters" id="active-filters"></div>
+      <div class="loading-bar" id="loading-bar" hidden><span></span></div>
+      <div id="view" class="view"></div>
+    </main>
+  </div>
+
+  <!-- Termin-Details -->
+  <dialog id="dlg-event" class="dialog dialog-event" aria-labelledby="ev-title">
+    <div id="event-detail"></div>
+  </dialog>
+
+  <!-- Einstellungen -->
+  <dialog id="dlg-settings" class="dialog" aria-labelledby="settings-title">
+    <form method="dialog" class="dialog-body" id="settings-form">
+      <header class="dialog-head">
+        <h2 id="settings-title">Relays</h2>
+        <button class="icon-btn" value="cancel" aria-label="Schließen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </header>
+      <p class="muted">Termine werden live von diesen Nostr-Relays geladen und neue Termine dort veröffentlicht.</p>
+      <ul class="relay-list" id="relay-list"></ul>
+      <div class="row">
+        <input id="relay-input" type="url" placeholder="wss://relay.example.org" aria-label="Relay hinzufügen">
+        <button class="btn" type="button" id="btn-add-relay">Hinzufügen</button>
+      </div>
+      <footer class="dialog-foot">
+        <button class="link-btn" type="button" id="btn-reset-relays">Standard wiederherstellen</button>
+        <button class="btn btn-primary" value="ok">Fertig</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Termin anlegen / bearbeiten -->
+  <dialog id="dlg-edit" class="dialog" aria-labelledby="edit-title">
+    <form class="dialog-body" id="edit-form">
+      <header class="dialog-head">
+        <h2 id="edit-title">Neuer Termin</h2>
+        <button class="icon-btn" type="button" data-close aria-label="Schließen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </header>
+      <label class="field"><span>Titel *</span><input name="title" required maxlength="200"></label>
+      <label class="switch"><input type="checkbox" name="allDay"><span>Ganztägig</span></label>
+      <div class="grid-2">
+        <label class="field"><span>Beginn *</span><input name="start" type="datetime-local" required></label>
+        <label class="field"><span>Ende</span><input name="end" type="datetime-local"></label>
+      </div>
+      <label class="field"><span>Ort</span><input name="location" placeholder="z. B. Online oder Adresse"></label>
+      <label class="field"><span>Kurzbeschreibung</span><input name="summary" maxlength="300"></label>
+      <label class="field"><span>Beschreibung</span><textarea name="content" rows="5"></textarea></label>
+      <div class="grid-2">
+        <label class="field"><span>Link</span><input name="link" type="url" placeholder="https://"></label>
+        <label class="field"><span>Bild-URL</span><input name="image" type="url" placeholder="https://"></label>
+      </div>
+      <label class="field"><span>Schlagworte</span><input name="tags" placeholder="kommagetrennt, z. B. fortbildung, religion"></label>
+      <p class="muted small">Der Termin wird mit deiner Nostr-Erweiterung (NIP-07) signiert und an alle aktiven Relays gesendet.</p>
+      <footer class="dialog-foot">
+        <button class="btn btn-danger hidden" type="button" id="btn-delete-event">Löschen</button>
+        <span class="spacer"></span>
+        <button class="btn" type="button" data-close>Abbrechen</button>
+        <button class="btn btn-primary" type="submit">Veröffentlichen</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+  <noscript><p class="noscript">Diese Seite benötigt JavaScript, um Termine direkt von Nostr-Relays zu laden.</p></noscript>
+</body>
+</html>
